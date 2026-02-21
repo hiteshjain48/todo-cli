@@ -1,11 +1,14 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 
-	"github.com/hiteshjain48/todo-cli/tasks"
+	"github.com/hiteshjain48/todo-cli/model"
+	"github.com/hiteshjain48/todo-cli/service"
+	"github.com/hiteshjain48/todo-cli/storage"
 )
 
 func main() {
@@ -13,79 +16,103 @@ func main() {
 	nArgs := len(args)
 	if nArgs == 0 {
 		fmt.Println("Please enter a valid command...")
-		return
+		os.Exit(1)
 	}
+	svc := service.NewTaskService(storage.JSONRepository{Path: "tasks.json"})
 
 	switch args[0] {
 	case "add":
 		if nArgs != 2 {
-			fmt.Println("Invaild number of arguments...")
-			return
+			exitf("Invalid number of arguments")
 		}
-		fmt.Println("Adding task...")
-		tasks.AddTask(args[1])
+		task, err := svc.Add(args[1])
+		exitOnErr(err)
+		fmt.Println("Task added (id=%d). \n", task.ID)
+
 	case "update":
 		if nArgs != 3 {
-			fmt.Println("Invaild number of arguments...")
-			return
+			exitf("Invalid number of arguments")
 		}
-		id, err := strconv.Atoi(args[1])
-		if err != nil {
-			fmt.Println("Error during fetching id... ", err)
-			return
-		}
-		fmt.Println("Updating task...")
-		tasks.UpdateTask(id, args[2])
+		id := parseID(args[1])
+		err := svc.Update(id, args[2])
+		exitOnErr(err)
+		fmt.Println("Task updated.")
 	case "delete":
 		if nArgs != 2 {
-			fmt.Println("Invaild number of arguments...")
-			return
+			exitf("Invalid number of arguments")
 		}
-		id, err := strconv.Atoi(args[1])
-		if err != nil {
-			fmt.Println("Error during fetching id... ", err)
-			return
-		}
-		fmt.Println("Deleting task...")
-		tasks.DeleteTask(id)
+		id := parseID(args[1])
+		err := svc.Delete(id)
+		exitOnErr(err)
+		fmt.Println("Task deleted.")
+
 	case "mark-in-progress":
 		if nArgs != 2 {
-			fmt.Println("Invaild number of arguments...")
-			return
+			exitf("Invalid number of arguments")
 		}
-		id, err := strconv.Atoi(args[1])
-		if err != nil {
-			fmt.Println("Error during fetching id... ", err)
-			return
-		}
-		fmt.Println("Marking in progress...")
-		tasks.MarkProgress(id)
+		id := parseID(args[1])
+		err := svc.SetStatus(id, model.StatusInProgress)
+		exitOnErr(err)
+		fmt.Println("Marked as in progress.")
+
 	case "mark-done":
 		if nArgs != 2 {
-			fmt.Println("Invaild number of arguments...")
-			return
+			exitf("Invalid number of arguments")
 		}
-		id, err := strconv.Atoi(args[1])
-		if err != nil {
-			fmt.Println("Error during fetching id... ", err)
-			return
-		}
-		fmt.Println("Marking as done...")
-		tasks.MarkDone(id)
+		id := parseID(args[1])
+		err := svc.SetStatus(id, model.StatusDone)
+		exitOnErr(err)
+		fmt.Println("Marked as done.")
+
 	case "list":
 		if nArgs > 2 {
-			fmt.Println("Invalid number of arguments")
-			return
+			exitf("Invalid number of arguments")
 		}
-		fmt.Println("Listing task...")
-		switch nArgs {
-		case 1:
-			tasks.ListTasks()
-		case 2:
-			tasks.ListTasks(args[1])
+		var filter *model.Status
+		if nArgs == 2 {
+			s := model.Status(args[1])
+			if !s.Valid() {
+				exitf("Invalid status: %s", args[1])
+			}
+			filter = &s
 		}
+		items, err := svc.List((filter))
+		exitOnErr(err)
+		for _, t := range items {
+			fmt.Printf("%d | %s | %s | created=%s | updated=%s\n", t.ID, t.Description, t.Status, t.CreatedAt.Format("2006-01-02 15:04:05"), t.UpdatedAt.Format("2006-01-02 15:04:05"))
+		}
+
 	default:
 		fmt.Println("Please enter a valid command...")
 		return
 	}
+}
+
+func exitf(format string, a ...any) {
+	fmt.Printf(format+"\n", a...)
+	os.Exit(1)
+}
+
+func exitOnErr(err error) {
+	if err == nil {
+		return
+	}
+	switch {
+	case errors.Is(err, model.ErrorTaskNotFound):
+		exitf("Task not found")
+	case errors.Is(err, model.ErrInvalidStatus):
+		exitf("Invalid status")
+	case errors.Is(err, model.ErrInvalidInput):
+		exitf("Invalid input")
+	default:
+		exitf("Error: %v", err)
+	}
+}
+
+func parseID(raw string) int {
+	id, err := strconv.Atoi(raw)
+	if err != nil || id <= 0 {
+		exitf("Invalid id: %s", raw)
+	}
+	return id
 }
