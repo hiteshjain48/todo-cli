@@ -15,7 +15,7 @@ func main() {
 	args := os.Args[1:]
 	nArgs := len(args)
 	if nArgs == 0 {
-		fmt.Println("Please enter a valid command...")
+		fmt.Printf("Please enter a valid command...\n")
 		os.Exit(1)
 	}
 	svc := service.NewTaskService(storage.JSONRepository{Path: "tasks.json"})
@@ -27,8 +27,7 @@ func main() {
 		}
 		task, err := svc.Add(args[1])
 		exitOnErr(err)
-		fmt.Println("Task added (id=%d). \n", task.ID)
-
+		fmt.Printf("Task added (id=%d). \n", task.ID)
 	case "update":
 		if nArgs != 3 {
 			exitf("Invalid number of arguments")
@@ -36,7 +35,7 @@ func main() {
 		id := parseID(args[1])
 		err := svc.Update(id, args[2])
 		exitOnErr(err)
-		fmt.Println("Task updated.")
+		fmt.Printf("Task updated.\n")
 	case "delete":
 		if nArgs != 2 {
 			exitf("Invalid number of arguments")
@@ -44,7 +43,7 @@ func main() {
 		id := parseID(args[1])
 		err := svc.Delete(id)
 		exitOnErr(err)
-		fmt.Println("Task deleted.")
+		fmt.Printf("Task deleted.\n")
 
 	case "mark-in-progress":
 		if nArgs != 2 {
@@ -53,7 +52,7 @@ func main() {
 		id := parseID(args[1])
 		err := svc.SetStatus(id, model.StatusInProgress)
 		exitOnErr(err)
-		fmt.Println("Marked as in progress.")
+		fmt.Printf("Marked as in progress.\n")
 
 	case "mark-done":
 		if nArgs != 2 {
@@ -62,7 +61,7 @@ func main() {
 		id := parseID(args[1])
 		err := svc.SetStatus(id, model.StatusDone)
 		exitOnErr(err)
-		fmt.Println("Marked as done.")
+		fmt.Printf("Marked as done.\n")
 
 	case "list":
 		if nArgs > 2 {
@@ -83,7 +82,7 @@ func main() {
 		}
 
 	default:
-		fmt.Println("Please enter a valid command...")
+		fmt.Printf("Please enter a valid command...\n")
 		return
 	}
 }
