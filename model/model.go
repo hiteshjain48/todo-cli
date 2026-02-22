@@ -7,18 +7,18 @@ type Tasks struct {
 }
 
 type Task struct {
-	Id 			int 		`json:"id"`
+	ID 			int 		`json:"id"`
 	Description string 		`json:"description"`
-	Status 		string 		`json:"status"`
+	Status 		Status 		`json:"status"`
 	CreatedAt	time.Time	`json:"createdAt"`
 	UpdatedAt	time.Time	`json:"updatedAt"`
 }
 
-func (ts *Tasks) GetNextId() int {
+func (ts *Tasks) GetNextID() int {
     maxId := 0
     for _, t := range ts.Tasks {
-        if t.Id > maxId {
-            maxId = t.Id
+        if t.ID > maxId {
+            maxId = t.ID
         }
     }
     return maxId + 1
